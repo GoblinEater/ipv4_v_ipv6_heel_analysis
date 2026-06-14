@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Test on Goblin Eaters Cyber Cavern</title>
+    <link>http://localhost:1313/tags/test/</link>
+    <description>Recent content in Test on Goblin Eaters Cyber Cavern</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Thu, 14 May 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/test/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Untitled</title>
+      <link>http://localhost:1313/posts/untitled/</link>
+      <pubDate>Thu, 14 May 2026 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/posts/untitled/</guid>
+      <description>&lt;p&gt;##Hello World&lt;/p&gt;
+&lt;p&gt;So, this is a carefully crafted post that has taken a number of hours to automate.&lt;/p&gt;
+&lt;p&gt;I have created a process where I create content in Notion, using standard markdown methods, and then push it though a Hugo platform, via github, and onto my cloudflare hosted website.&lt;/p&gt;
+&lt;p&gt;I’m excited&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;input disabled=&#34;&#34; type=&#34;checkbox&#34;&gt; Finish this first task&lt;/li&gt;
+&lt;li&gt;&lt;input disabled=&#34;&#34; type=&#34;checkbox&#34;&gt; Check it works through to the website&lt;/li&gt;
+&lt;li&gt;&lt;input disabled=&#34;&#34; type=&#34;checkbox&#34;&gt; Dance a happy dance!&lt;/li&gt;
+&lt;/ul&gt;</description>
+    </item>
+  </channel>
+</rss>
