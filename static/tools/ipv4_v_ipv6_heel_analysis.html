@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPv4 vs IPv6 — Achilles &amp; Hermes Heel Analysis</title>
+  <style>
+    html { font-size: 20px; } /* rem anchor — browser zoom scales everything */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #07090f;
+      --surface:     #0c111e;
+      --card:        #111827;
+      --border:      #1a2540;
+      --border-lt:   #263352;
+      --ipv4:        #f59e0b;
+      --ipv4-dim:    rgba(245,158,11,.12);
+      --ipv4-bdr:    rgba(245,158,11,.28);
+      --ipv6:        #38bdf8;
+      --ipv6-dim:    rgba(56,189,248,.1);
+      --ipv6-bdr:    rgba(56,189,248,.28);
+      --ach:         #ef4444;
+      --ach-dim:     rgba(239,68,68,.06);
+      --ach-bdr:     rgba(239,68,68,.22);
+      --her:         #f59e0b;
+      --her-dim:     rgba(245,158,11,.06);
+      --her-bdr:     rgba(245,158,11,.22);
+      --txt:         #e2e8f0;
+      --txt2:        #94a3b8;
+      --txt3:        #64748b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--txt);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    .hdr {
+      background: linear-gradient(180deg, #0b1122 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 22px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .hdr-top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .hdr-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--txt3);
+      margin-bottom: 4px;
+    }
+    .hdr-h1 {
+      font-size: clamp(1rem, 1.2vw + 0.55rem, 1.35rem);
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: #f1f5f9;
+      line-height: 1.15;
+    }
+    .hdr-h1 .ach-word { color: #f87171; }
+    .hdr-h1 .her-word { color: #fbbf24; }
+
+    .hdr-legend {
+      display: flex;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    .leg-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.66rem;
+      color: var(--txt2);
+    }
+    .leg-dot {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ─── MYTH METER ─── */
+    .meters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .meter-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 13px;
+    }
+    .meter-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 7px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .meter-proto {
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .meter-proto.v4 { color: var(--ipv4); }
+    .meter-proto.v6 { color: var(--ipv6); }
+    .meter-scores {
+      display: flex;
+      gap: 10px;
+      font-size: 0.59rem;
+      color: var(--txt3);
+    }
+    .sc-a { color: #f87171; }
+    .sc-h { color: #fbbf24; }
+    .meter-track {
+      height: 7px;
+      background: rgba(255,255,255,.04);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    .bar-a {
+      position: absolute; left: 0; top: 0; height: 100%;
+      border-radius: 4px 0 0 4px;
+      background: linear-gradient(90deg, #991b1b, #ef4444);
+      transition: width .9s cubic-bezier(.4,0,.2,1);
+    }
+    .bar-h {
+      position: absolute; right: 0; top: 0; height: 100%;
+      border-radius: 0 4px 4px 0;
+      background: linear-gradient(90deg, #f59e0b, #92400e);
+      transition: width .9s cubic-bezier(.4,0,.2,1);
+    }
+    .meter-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 0.62rem;
+      letter-spacing: .04em;
+      color: var(--txt3);
+    }
+
+    /* ─── TWO-ROW METERS LAYOUT ─── */
+    .meters-section {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-width: 660px;
+      margin: 0 auto;
+    }
+    .meter-row-lbl {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--txt3);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .meter-row-lbl .domain-tag {
+      color: var(--txt2);
+      font-weight: 500;
+      letter-spacing: .05em;
+      text-transform: none;
+    }
+    .meter-domain-placeholder {
+      padding: 8px 13px;
+      border: 1px dashed var(--border);
+      border-radius: 7px;
+      font-size: 0.59rem;
+      color: var(--txt3);
+      font-style: italic;
+    }
+
+    /* ─── LAYOUT ─── */
+    .app {
+      display: flex;
+    }
+
+    /* ─── SIDEBAR NAV ─── */
+    .nav {
+      width: 192px;
+      min-width: 192px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      height: calc(100vh - 148px);
+      overflow-y: auto;
+      position: sticky;
+      top: 148px;
+      padding: 10px 5px;
+      scrollbar-width: thin;
+    }
+    .nav-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--txt3);
+      padding: 4px 9px 9px;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      width: 100%;
+      padding: 7px 9px;
+      background: transparent;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: var(--txt2);
+      font-size: 0.72rem;
+      font-family: inherit;
+      text-align: left;
+      line-height: 1.3;
+      margin-bottom: 1px;
+      transition: all .12s;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,.04); color: var(--txt); }
+    .nav-btn.active { background: rgba(255,255,255,.07); color: #f1f5f9; font-weight: 600; }
+    .nav-icon { font-size: 0.875rem; min-width: 18px; text-align: center; }
+    .nav-inds {
+      margin-left: auto;
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+    .ind {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+    }
+    .ind-a { background: rgba(239,68,68,.65); }
+    .ind-h { background: rgba(245,158,11,.65); }
+
+    /* ─── MAIN ─── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 22px 32px;
+      scrollbar-width: thin;
+    }
+
+    .cat-hdr {
+      margin-bottom: 14px;
+    }
+    .cat-name {
+      font-size: clamp(1rem, 1.2vw + 0.55rem, 1.35rem);
+      font-weight: 700;
+      letter-spacing: -.015em;
+      color: #f1f5f9;
+      margin-bottom: 3px;
+    }
+    .cat-desc {
+      font-size: 0.78rem;
+      color: var(--txt2);
+    }
+
+    /* Verdict strip */
+    .verdict {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 13px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid;
+      flex-wrap: wrap;
+    }
+    .verdict .v-sub { font-weight: 400; color: var(--txt2); font-size: 0.66rem; }
+    .vrd-v6   { background: rgba(56,189,248,.06);  border-color: rgba(56,189,248,.2);  color: var(--ipv6); }
+    .vrd-v4   { background: rgba(245,158,11,.07);  border-color: rgba(245,158,11,.2);  color: var(--ipv4); }
+    .vrd-both { background: rgba(239,68,68,.06);   border-color: rgba(239,68,68,.2);   color: #f87171; }
+    .vrd-cont { background: rgba(168,85,247,.06);  border-color: rgba(168,85,247,.2);  color: #c084fc; }
+
+    /* Protocol grid */
+    .proto-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .proto-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 9px;
+      border-bottom: 2px solid;
+      margin-bottom: 11px;
+    }
+    .proto-hdr.v4 { border-color: var(--ipv4); }
+    .proto-hdr.v6 { border-color: var(--ipv6); }
+
+    .proto-badge {
+      font-size: 0.59rem;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .proto-badge.v4 { background: var(--ipv4-dim); color: var(--ipv4); border: 1px solid var(--ipv4-bdr); }
+    .proto-badge.v6 { background: var(--ipv6-dim); color: var(--ipv6); border: 1px solid var(--ipv6-bdr); }
+
+    .proto-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--txt);
+    }
+
+    /* ─── HEEL CARDS ─── */
+    .heel-card {
+      border-radius: 7px;
+      border: 1px solid;
+      margin-bottom: 9px;
+      overflow: hidden;
+    }
+    .heel-card.a { background: var(--ach-dim); border-color: var(--ach-bdr); }
+    .heel-card.h { background: var(--her-dim); border-color: var(--her-bdr); }
+
+    .heel-hdr {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      padding: 9px 11px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .heel-type {
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 2px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+    .heel-type.a {
+      background: rgba(239,68,68,.18);
+      color: #fca5a5;
+      border: 1px solid rgba(239,68,68,.3);
+    }
+    .heel-type.h {
+      background: rgba(245,158,11,.18);
+      color: #fcd34d;
+      border: 1px solid rgba(245,158,11,.3);
+    }
+    .heel-title {
+      flex: 1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      line-height: 1.35;
+    }
+    .sev-badge {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+    .sev-critical  { background: rgba(220,38,38,.25);   color: #fca5a5; }
+    .sev-high      { background: rgba(239,68,68,.18);   color: #f87171; }
+    .sev-medium    { background: rgba(251,146,60,.18);  color: #fdba74; }
+    .str-high      { background: rgba(34,197,94,.16);   color: #86efac; }
+    .str-medium    { background: rgba(59,130,246,.16);  color: #93c5fd; }
+    .str-cond      { background: rgba(168,85,247,.16);  color: #d8b4fe; }
+    .str-low       { background: rgba(148,163,184,.12); color: #cbd5e1; }
+
+    .expand-btn {
+      color: var(--txt3);
+      font-size: 0.625rem;
+      margin-top: 3px;
+      flex-shrink: 0;
+      transition: transform .2s;
+    }
+    .heel-hdr.open .expand-btn { transform: rotate(180deg); }
+
+    .heel-body {
+      padding: 0 11px 11px;
+      display: none;
+      border-top: 1px solid;
+    }
+    .heel-card.a .heel-body { border-color: rgba(239,68,68,.1); }
+    .heel-card.h .heel-body { border-color: rgba(245,158,11,.1); }
+    .heel-body.open { display: block; }
+
+    .heel-detail {
+      color: #94a3b8;
+      font-size: 0.75rem;
+      line-height: 1.78;
+      padding-top: 9px;
+      margin-bottom: 9px;
+    }
+
+    .list-label {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--txt3);
+      margin-bottom: 5px;
+    }
+    .heel-list { list-style: none; }
+    .heel-list li {
+      font-size: 0.69rem;
+      color: var(--txt3);
+      padding: 2.5px 0 2.5px 13px;
+      position: relative;
+      line-height: 1.45;
+    }
+    .heel-list li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      font-size: 0.53rem;
+      top: 4px;
+    }
+    .heel-card.a .heel-list li::before { color: #ef4444; }
+    .heel-card.h .heel-list li::before { color: #f59e0b; }
+
+    .caveat {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: rgba(168,85,247,.07);
+      border: 1px solid rgba(168,85,247,.2);
+      border-radius: 5px;
+      font-size: 0.66rem;
+      color: #c4b5fd;
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .no-heel {
+      border: 1px dashed rgba(255,255,255,.07);
+      border-radius: 7px;
+      padding: 13px;
+      text-align: center;
+      font-size: 0.69rem;
+      color: var(--txt3);
+      font-style: italic;
+      margin-bottom: 9px;
+    }
+
+    /* ─── OVERVIEW MODE ─── */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .ov-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 14px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .ov-card:hover {
+      border-color: var(--border-lt);
+      background: rgba(255,255,255,.03);
+    }
+    .ov-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-bottom: 9px;
+    }
+    .ov-icon { font-size: 1.125rem; line-height: 1; margin-top: 1px; }
+    .ov-cat-name {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 2px;
+    }
+    .ov-cat-desc {
+      font-size: 0.66rem;
+      color: var(--txt2);
+      line-height: 1.45;
+    }
+    .ov-status {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .ov-proto-cell {
+      padding: 5px 8px;
+      border-radius: 5px;
+      border: 1px solid;
+      font-size: 0.625rem;
+    }
+    .ov-proto-cell.v4 { background: var(--ipv4-dim); border-color: var(--ipv4-bdr); }
+    .ov-proto-cell.v6 { background: var(--ipv6-dim); border-color: var(--ipv6-bdr); }
+    .ov-proto-label {
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .ov-proto-cell.v4 .ov-proto-label { color: var(--ipv4); }
+    .ov-proto-cell.v6 .ov-proto-label { color: var(--ipv6); }
+    .ov-chips { display: flex; gap: 3px; flex-wrap: wrap; }
+    .ov-chip {
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    .ov-chip.a { background: rgba(239,68,68,.18); color: #fca5a5; }
+    .ov-chip.h { background: rgba(245,158,11,.18); color: #fcd34d; }
+    .ov-chip.none { background: rgba(255,255,255,.05); color: var(--txt3); }
+
+    /* ─── VIEW TOGGLE ─── */
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px;
+    }
+    .vt-btn {
+      font-size: 0.66rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--txt3);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .12s;
+    }
+    .vt-btn.active {
+      background: rgba(255,255,255,.08);
+      color: var(--txt);
+    }
+    .vt-btn:hover:not(.active) { color: var(--txt2); }
+
+    /* ─── SCROLLBARS ─── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+
+    /* ─── MOBILE ─── */
+    @media (max-width: 700px) {
+      .nav { width: 100%; min-width: unset; height: auto; position: static; display: flex; overflow-x: auto; padding: 6px 5px; border-right: none; border-bottom: 1px solid var(--border); }
+      .nav-label { display: none; }
+      .nav-btn { flex-shrink: 0; white-space: nowrap; }
+      .nav-inds { display: none; }
+      .app { flex-direction: column; }
+      .main { padding: 14px 14px 24px; }
+      .proto-grid { grid-template-columns: 1fr; }
+      .meters { grid-template-columns: 1fr; }
+      .hdr-legend { display: none; }
+      .overview-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-top">
+    <div>
+      <div class="hdr-eyebrow">Protocol Security Framework · Comparative Analysis</div>
+      <div class="hdr-h1">
+        IPv4 vs IPv6 —
+        <span class="ach-word">Achilles</span> &amp;
+        <span class="her-word">Hermes</span> Heel Analysis
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="hdr-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Achilles Heel — Built-in structural weakness</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div>Hermes Heel — Inherent strength when properly deployed</div>
+      </div>
+      <div class="view-toggle" id="viewToggle">
+        <button class="vt-btn active" data-view="cat" onclick="setView('cat',this)">Category View</button>
+        <button class="vt-btn" data-view="ov" onclick="setView('ov',this)">Overview Matrix</button>
+      </div>
+    </div>
+  </div>
+  <div class="meters-section">
+    <div>
+      <div class="meter-row-lbl">Overall · All 9 Domains</div>
+      <div class="meters" id="meters-overall"></div>
+    </div>
+    <div>
+      <div class="meter-row-lbl">Active Domain <span class="domain-tag" id="meter-domain-name"></span></div>
+      <div id="meters-domain"><div class="meter-domain-placeholder">← Select a category to see its individual posture</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="nav" id="nav"></nav>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// WEIGHTS
+// ══════════════════════════════════════════════════════════
+const SEV_WT = { critical: 3, high: 2, medium: 1 };
+const STR_WT = { high: 3, medium: 2, conditional: 1, low: 1 };
+
+// ══════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════
+const CATS = [
+  {
+    id:'address', icon:'⬡', label:'Address Architecture',
+    desc:'How the address space drives security architecture decisions — and what NAT dependency creates.',
+    verdict:{ type:'v6', icon:'🔵', label:'IPv6 Advantage',
+      note:'128-bit space eliminates NAT dependency, restoring direct source attribution and end-to-end accountability.' },
+    ipv4:{
+      achilles:{
+        title:'Address Exhaustion → NAT Dependency',
+        severity:'high',
+        detail:'The 32-bit address space (~4.3 billion addresses) was exhausted, forcing widespread NAT deployment. NAT obscures true source addresses, breaks end-to-end accountability, complicates forensic attribution, and was never designed as a security mechanism — yet became treated as one. Security posture built on NAT hides the attack surface rather than eliminating it.',
+        list:[ 'Source attribution failures in incident response logs',
+               'Forensic blind spots — which host behind NAT generated this traffic?',
+               'False sense of isolation from NATted network segments',
+               'Shared IP reputation — one infected host can blacklist the entire NAT pool' ]
+      },
+      hermes: null
+    },
+    ipv6:{
+      achilles: null,
+      hermes:{
+        title:'Vast Address Space Enables True End-to-End Accountability',
+        strength:'high',
+        detail:'128-bit addressing provides ~3.4 × 10³⁸ unique addresses, eliminating exhaustion and the NAT dependency it created. Every device can receive a globally routable, unique address. This restores the original internet architecture — end-to-end connectivity with direct, unambiguous source attribution — simplifying security policy enforcement, log correlation, and forensic investigation.',
+        list:[ 'Direct source attribution without NAT traversal gaps',
+               'Simplified policy enforcement — no NAT state tables to track',
+               'True end-to-end connectivity enables verifiable, stricter access controls',
+               'Cleaner SIEM correlation with stable, globally unique source IPs' ]
+      }
+    }
+  },
+  {
+    id:'ipsec', icon:'🔐', label:'IPsec Integration',
+    desc:'Whether authentication and encryption are native to the protocol or retrofitted post-design.',
+    verdict:{ type:'v6', icon:'🔵', label:'IPv6 Advantage (with caveat)',
+      note:'IPsec is a first-class design citizen in IPv6, but RFC 6434 (2011) downgraded the MUST requirement to SHOULD.' },
+    ipv4:{
+      achilles:{
+        title:'Security as an Afterthought',
+        severity:'high',
+        detail:'IPv4 was designed for a trusted academic network — security was not a requirement. IPsec was defined years later (RFC 1825, 1995) and retrofitted as optional extension headers. Implementation is inconsistent across vendors, frequently misconfigured, and never mandatory. The protocol\'s architecture has no security chromosome; it was grafted on after the fact.',
+        list:[ 'No mandatory authentication of packet origin at any hop',
+               'Plaintext traffic is the default operational state',
+               'IPsec misconfiguration is common due to retrofitting complexity',
+               'Inconsistent vendor implementations create interoperability vs. security tradeoffs' ]
+      },
+      hermes: null
+    },
+    ipv6:{
+      achilles:{
+        title:'RFC 6434: Design Intent Weakened by Pragmatics',
+        severity:'medium',
+        detail:'IPv6\'s original specification (RFC 2460) required IPsec support as mandatory (MUST). RFC 6434 (2011) downgraded this to SHOULD, acknowledging resource constraints on embedded devices. Conformant IPv6 implementations are no longer required to implement IPsec — the architectural intent was strong, but the standard was softened by deployment reality.',
+        list:[ 'Conformant IPv6 stacks may legally omit IPsec support',
+               'Assumed baseline security posture is no longer guaranteed by spec',
+               'IoT and embedded IPv6 devices commonly ship without IPsec implementation' ]
+      },
+      hermes:{
+        title:'IPsec as a First-Class Architectural Citizen',
+        strength:'high',
+        detail:'IPv6 was architected with IPsec as a native component — not a retrofit. Authentication Header (AH) and Encapsulating Security Payload (ESP) are defined as natural extension header types in the IPv6 header chain, not hacks bolted onto a foreign format. When properly deployed, this provides cryptographic authentication of packet origin and end-to-end confidentiality without requiring application-layer workarounds.',
+        list:[ 'AH and ESP are native extension header types — no format hacking required',
+               'Designed-in authentication model with a clear, cohesive specification',
+               'No protocol-level impediment to mandating encryption at deployment',
+               'ESP provides both integrity protection and confidentiality natively' ]
+      }
+    }
+  },
+  {
+    id:'layer2', icon:'🔗', label:'Layer 2 Resolution',
+    desc:'How the protocol maps network addresses to hardware (MAC) addresses, and the trust model of that mapping.',
+    verdict:{ type:'cont', icon:'⚔️', label:'Contested — Both Vulnerable',
+      note:'NDP inherits ARP\'s trust deficit. SEND (RFC 3971) solves it cryptographically, but production adoption is extremely rare.' },
+    ipv4:{
+      achilles:{
+        title:'ARP: Zero Authentication by Design',
+        severity:'critical',
+        detail:'Address Resolution Protocol has no authentication mechanism whatsoever. Any host on a local network can broadcast an unsolicited ARP reply claiming ownership of any IP address, immediately poisoning the ARP cache of other hosts. ARP spoofing enables trivial MITM attacks, traffic interception, and denial of service. This was an accepted simplicity tradeoff in 1982; it remains a structural, inescapable weakness in every IPv4 local segment.',
+        list:[ 'ARP cache poisoning / ARP spoofing — no proof of address ownership required',
+               'MITM attacks on local network segment with no cryptographic countermeasure',
+               'Default gateway impersonation, redirecting all outbound traffic',
+               'Denial of service via ARP flooding',
+               'Traffic interception and real-time manipulation' ]
+      },
+      hermes: null
+    },
+    ipv6:{
+      achilles:{
+        title:'NDP Inherits the Same Trust Deficit',
+        severity:'high',
+        detail:'Neighbor Discovery Protocol (NDP) replaces ARP in IPv6, operating via ICMPv6 Neighbor Solicitation and Advertisement messages. It inherits the same fundamental trust model: no mandatory cryptographic authentication of message origin. Rogue Router Advertisement (RA) attacks allow any host to advertise itself as a legitimate default router, redirecting all segment traffic. NDP spoofing is the IPv6-native equivalent of ARP poisoning — different mechanism, same attack class.',
+        list:[ 'Rogue Router Advertisement (RA) attacks — segment-wide traffic redirect',
+               'NDP spoofing / Neighbor Advertisement poisoning',
+               'Default gateway hijacking via forged RA messages',
+               'Denial of service via RA flooding (can exhaust SLAAC address space)',
+               'IPv6 MITM via Neighbor Advertisement spoofing' ]
+      },
+      hermes:{
+        title:'SEND: Cryptographic Protection When Deployed',
+        strength:'conditional',
+        detail:'Secure Neighbor Discovery (SEND, RFC 3971) provides cryptographic protection for all NDP messages using Cryptographically Generated Addresses (CGAs) and RSA key pairs. When properly deployed, SEND eliminates RA spoofing and NDP poisoning entirely — routers must cryptographically prove ownership of advertised prefixes. The Hermes heel exists in the specification; production deployment is extremely rare.',
+        list:[ 'Cryptographic verification of router identity via CGAs',
+               'RSA-signed NDP messages prevent all spoofing and poisoning attacks',
+               'CGA-based address ownership proof eliminates Neighbor Advertisement forgery',
+               'Fully eliminates RA and NDP spoofing when deployed end-to-end' ],
+        caveat:'SEND adoption is extremely rare in production environments. This advantage is largely theoretical for most current deployments.'
+      }
+    }
+  },
+  {
+    id:'fragmentation', icon:'🧩', label:'Fragmentation Handling',
+    desc:'Where fragmentation occurs relative to the network path, and the security implications of each model.',
+    verdict:{ type:'v6', icon:'🔵', label:'IPv6 Advantage',
+      note:'Source-only fragmentation eliminates an entire class of in-path reassembly attacks and centralizes accountability.' },
+    ipv4:{
+      achilles:{
+        title:'In-Path Fragmentation: IDS Evasion Vector',
+        severity:'high',
+        detail:'Any IPv4 router can fragment a packet mid-transit if it exceeds the outgoing MTU. Reassembly only occurs at the final destination. This creates a documented attack surface: overlapping fragment attacks (Teardrop), IDS/IPS evasion by splitting attack signatures across fragments, and resource exhaustion at the destination\'s reassembly buffer. Fragmented packets are the network inspector\'s worst case — the full payload is invisible until all fragments arrive.',
+        list:[ 'Teardrop attack — overlapping fragment offsets cause reassembly crash',
+               'IDS/IPS signature evasion by splitting attack payload across fragments',
+               'Reassembly buffer exhaustion attacks at destination hosts',
+               'Deep packet inspection bypass by fragmenting at L7 payload boundaries',
+               'Router-induced fragmentation without source control' ]
+      },
+      hermes: null
+    },
+    ipv6:{
+      achilles:{
+        title:'Atomic Fragments & Extension Header Evasion',
+        severity:'medium',
+        detail:'While mid-path fragmentation is eliminated, fragment-related vulnerabilities persist. "Atomic fragments" (Fragment Extension Header present but indicating no actual fragmentation) were exploitable to bypass anti-spoofing mechanisms until RFC 8021 addressed them in 2017 — legacy stacks remain vulnerable. Extension header chaining can also push the Fragment EH beyond the parsing depth of inspection devices, obscuring fragmented payloads.',
+        list:[ 'Atomic fragment attacks — addressed by RFC 8021, but legacy stacks remain exposed',
+               'Extension header chains pushing Fragment EH past inspection device depth',
+               'First-fragment-only policy evasion — content hidden in subsequent fragments',
+               'Packet Too Big message spoofing to force artificial fragmentation' ]
+      },
+      hermes:{
+        title:'Source-Only Fragmentation: Centralized Accountability',
+        strength:'high',
+        detail:'IPv6 mandates that only the originating source host may fragment a packet. Routers do not fragment — they drop oversized packets and return an ICMPv6 "Packet Too Big" message to the sender. This eliminates mid-path reassembly vulnerabilities entirely, places fragmentation accountability on the verified sender, and enforces Path MTU Discovery as the primary MTU constraint mechanism.',
+        list:[ 'No mid-path fragmentation — Teardrop class attacks structurally eliminated',
+               'Fragmentation accountability rests entirely on the source host',
+               'Path MTU Discovery enforced by design rather than operational best practice',
+               'Routers operate as pure forwarders — no reassembly state to exhaust' ]
+      }
+    }
+  },
+  {
+    id:'icmp', icon:'📡', label:'ICMP Dependency',
+    desc:'The operational role of ICMP in each protocol and what that means for attack surface and administrative control.',
+    verdict:{ type:'v4', icon:'🟡', label:'IPv4 Advantage',
+      note:'ICMPv4 is blockable without breaking routing. ICMPv6 is foundational and cannot be blocked without disabling IPv6 operation.' },
+    ipv4:{
+      achilles:{
+        title:'ICMP as Reconnaissance & Tunneling Vector',
+        severity:'medium',
+        detail:'ICMPv4 is routinely exploited for reconnaissance (ping sweeps, TTL-based OS fingerprinting) and as a covert channel for data exfiltration. ICMP tunneling tools carry arbitrary TCP/IP payloads inside ICMP echo request/reply messages, traversing firewalls that permit diagnostic traffic. This creates an unmonitored exfiltration channel in environments that allow ping.',
+        list:[ 'ICMP tunneling for data exfiltration (icmpsh, ptunnel)',
+               'Ping sweeps for live host discovery',
+               'TTL and error response analysis for remote OS fingerprinting',
+               'ICMP Redirect spoofing for route manipulation',
+               'ICMP error messages as a covert feedback channel for payloads' ]
+      },
+      hermes:{
+        title:'Full ICMP Blockability',
+        strength:'medium',
+        detail:'ICMPv4 is not required for core IPv4 routing and packet delivery. An administrator can block all ICMP traffic at the perimeter without breaking TCP/UDP communication. This flexibility allows meaningful reduction of the diagnostic attack surface, though it comes at the cost of reduced operational visibility (e.g., Path MTU Discovery and certain diagnostics become unreliable).',
+        list:[ 'Can be blocked entirely without breaking TCP/UDP communication',
+               'Reduces reconnaissance and OS fingerprinting attack surface at the perimeter',
+               'Fine-grained control by ICMP type allows selective exposure',
+               'Eliminates ICMP tunneling vectors when fully blocked' ]
+      }
+    },
+    ipv6:{
+      achilles:{
+        title:'ICMPv6: Foundational, Unblockable Attack Surface',
+        severity:'high',
+        detail:'ICMPv6 is not optional — it is foundational to IPv6 operation. Neighbor Discovery Protocol, Path MTU Discovery, Router Solicitation/Advertisement, Multicast Listener Discovery, and Duplicate Address Detection all operate exclusively via ICMPv6. Blocking ICMPv6 breaks IPv6 at the most basic level. This is a protocol-level mandatory attack surface that cannot be firewall-ruled away without disabling the protocol itself on that segment.',
+        list:[ 'Router Advertisement flooding — segment-wide denial of service',
+               'Mandatory network boundary exposure of NDP traffic — cannot be restricted',
+               'Blocking ICMPv6 disables Layer 3 IPv6 operation entirely',
+               'Multicast Listener Discovery exploitation',
+               'ICMPv6 Destination Unreachable abuse as a port scanning feedback mechanism' ]
+      },
+      hermes: null
+    }
+  },
+  {
+    id:'privacy', icon:'👁️', label:'Address Privacy & Tracking',
+    desc:'How addressing decisions affect the ability to identify and track individual devices across networks.',
+    verdict:{ type:'cont', icon:'⚔️', label:'Contested — Opposing Tradeoffs',
+      note:'IPv4 NAT provides accidental external anonymity but destroys internal attribution. IPv6 EUI-64 embeds hardware identity, but RFC 4941 Privacy Extensions restore anonymity.' },
+    ipv4:{
+      achilles:{
+        title:'Shared IP Attribution Failures',
+        severity:'medium',
+        detail:'NAT-based address sharing creates serious logging and attribution failures for defenders. A single logged source IP may map to hundreds of internal hosts, making forensic investigation and incident response substantially harder. One infected host can also cause blacklisting of the entire NAT pool\'s shared IP, disrupting legitimate traffic from all co-tenants behind that address.',
+        list:[ 'Forensic attribution failure — which internal host made this connection?',
+               'SIEM log correlation fragmented by NAT state table gaps',
+               'Shared IP reputation — one compromise can blacklist all NAT pool members',
+               'Incident containment delayed by internal attribution ambiguity' ]
+      },
+      hermes:{
+        title:'Accidental Device Anonymity via NAT',
+        strength:'low',
+        detail:'As an architectural side effect of NAT, individual device identities are incidentally obscured from external observers. External attackers cannot directly enumerate internal hosts or their MAC addresses from a shared public IP. This privacy was never an intentional security design — it emerged from address sharing — but it provides real external anonymity as an operational reality.',
+        list:[ 'External observers cannot enumerate internal host count or topology',
+               'Individual device hardware identity obscured from internet-facing observers',
+               'Partial protection against targeted external reconnaissance of internal hosts' ],
+        caveat:'Architectural accident, not intentional design. Trades external anonymity for internal attribution blindness — a net negative for defenders conducting incident response.'
+      }
+    },
+    ipv6:{
+      achilles:{
+        title:'EUI-64 SLAAC: MAC Address Embedded in IPv6 Address',
+        severity:'high',
+        detail:'SLAAC in its original EUI-64 form derives the 64-bit Interface ID from the device\'s 48-bit MAC address (inserting "FFFE" at the midpoint). This embeds hardware identity in every IPv6 address — logged in every server communicated with, correlated across networks to track physical device movement. A device with EUI-64 SLAAC carries its hardware fingerprint in every packet header it ever sends.',
+        list:[ 'Hardware-level device fingerprinting extractable from IPv6 address structure',
+               'Cross-network device tracking via stable, hardware-derived Interface ID',
+               'Physical location correlation as device moves between different networks',
+               'Device inventory enumeration visible to external observers',
+               'Persistent identity tracking across network changes (same MAC = same suffix)' ]
+      },
+      hermes:{
+        title:'Privacy Extensions (RFC 4941): Randomized Interface IDs',
+        strength:'high',
+        detail:'RFC 4941 Privacy Extensions generate temporary, cryptographically random Interface IDs that rotate periodically (typically 24 hours for temporary addresses). Now the default on most modern operating systems (Windows, macOS, iOS, Android), this breaks EUI-64-based tracking — the device\'s network identity is no longer derivable from its hardware address across sessions or networks.',
+        list:[ 'Cryptographically random Interface IDs — no derivation from MAC address',
+               'Periodic rotation limits long-term tracking correlation',
+               'Default behavior on most modern OS implementations',
+               'Eliminates hardware fingerprinting across networks when active' ],
+        caveat:'Requires proper OS configuration. Older or embedded devices may still default to EUI-64. Not universally enforced at the network level.'
+      }
+    }
+  },
+  {
+    id:'broadcast', icon:'📢', label:'Broadcast vs. Multicast',
+    desc:'Whether the protocol uses subnet-wide broadcast and the security implications of each traffic distribution model.',
+    verdict:{ type:'v6', icon:'🔵', label:'IPv6 Advantage',
+      note:'IPv6 eliminates broadcast entirely, removing Smurf/Fraggle-class amplification attacks at the protocol level.' },
+    ipv4:{
+      achilles:{
+        title:'Directed Broadcast: Protocol-Level Amplifier',
+        severity:'high',
+        detail:'IPv4 subnet-directed broadcast forwards a single packet to every host on a subnet. This was the mechanism behind Smurf attacks: ICMP echo requests to a broadcast address with a victim\'s spoofed source IP caused the entire subnet to reply simultaneously to the victim — an amplification factor proportional to subnet size. All-nodes broadcast also forces every host CPU to process every broadcast frame, creating unavoidable resource overhead and expanding blast radius.',
+        list:[ 'Smurf amplification attack (ICMP echo requests to broadcast address)',
+               'Fraggle attack (UDP echo/chargen amplification to broadcast address)',
+               'ARP storm amplification via broadcast flooding',
+               'Forced CPU interrupt on every host for every broadcast frame',
+               'Bandwidth exhaustion via directed broadcast injection' ]
+      },
+      hermes: null
+    },
+    ipv6:{
+      achilles: null,
+      hermes:{
+        title:'Broadcast Eliminated: Surgical Multicast Architecture',
+        strength:'high',
+        detail:'IPv6 eliminates broadcast entirely at the protocol level. All one-to-many communication uses scoped multicast — nodes only receive and process traffic for groups they have explicitly joined. Solicited-Node multicast addresses target only the specific device in neighbor discovery operations rather than flooding the entire subnet. This eliminates broadcast amplification attacks and removes gratuitous CPU overhead from uninvolved hosts.',
+        list:[ 'Smurf and Fraggle class attacks are structurally impossible — no broadcast address exists',
+               'Nodes only process multicast traffic for groups they have joined',
+               'Solicited-Node multicast makes NDP operations more targeted than ARP broadcast',
+               'Eliminated per-host CPU interrupt overhead from broadcast frame processing',
+               'Scoped multicast prevents inter-segment amplification' ]
+      }
+    }
+  },
+  {
+    id:'transition', icon:'🌐', label:'Transition Mechanisms',
+    desc:'The security posture of dual-stack deployments and tunneling technologies during the IPv4-to-IPv6 migration period.',
+    verdict:{ type:'both', icon:'🔴', label:'Both Vulnerable',
+      note:'Dual-stack firewall gaps and IPv6-in-IPv4 tunneling create inspection blind spots and unmonitored exfiltration channels in both domains.' },
+    ipv4:{
+      achilles:{
+        title:'Dual-Stack: IPv6 Bypasses IPv4-Only Security Controls',
+        severity:'critical',
+        detail:'In dual-stack deployments, hosts with both addresses may communicate entirely over IPv6, bypassing firewall rules, IDS/IPS signatures, and monitoring policies written for IPv4 traffic. Security teams with mature IPv4 controls frequently have immature or absent IPv6 equivalents. Attackers who prefer the IPv6 path operate in a nearly unmonitored lane while defenders watch the IPv4 road.',
+        list:[ 'IPv6 traffic bypasses IPv4-only security controls entirely',
+               'Dual-stack firewall policy gaps — IPv6 rules commonly absent or incomplete',
+               'SIEM and monitoring blind spots in the IPv6 traffic lane',
+               'Protocol preference manipulation to force communication over IPv6 path',
+               'DLP controls applied only to IPv4 traffic miss IPv6-path exfiltration' ]
+      },
+      hermes: null
+    },
+    ipv6:{
+      achilles:{
+        title:'Tunneling Protocols: Inspection-Resistant Channels',
+        severity:'high',
+        detail:'Transition mechanisms — Teredo, 6to4, ISATAP, NAT64/DNS64 — encapsulate IPv6 inside IPv4 or vice versa. These tunnels frequently traverse firewalls uninspected, bypass DLP controls, and create unmonitored exfiltration channels. Teredo can establish IPv6 connectivity through NAT devices by tunneling over UDP port 3544, reaching IPv6-enabled endpoints through perimeters that appear protected. This security complexity often outlasts its intended migration purpose.',
+        list:[ 'Teredo tunneling through NAT and stateful firewalls via UDP port 3544',
+               '6to4 and 6in4 tunnels bypassing Layer 7 inspection entirely',
+               'ISATAP creating unmonitored IPv6 adjacencies over IPv4 infrastructure',
+               'NAT64/DNS64 enabling IPv6-only attacker infrastructure to reach IPv4 targets',
+               'Tunnel endpoints as persistent blind spots in network monitoring' ]
+      },
+      hermes: null
+    }
+  },
+  {
+    id:'header', icon:'📋', label:'Header Architecture',
+    desc:'How the protocol header is structured and the attack surface created by options and extension mechanisms.',
+    verdict:{ type:'v6', icon:'🔵', label:'Slight IPv6 Advantage',
+      note:'Fixed 40-byte base header is deterministic and hardware-parseable, but extension header chaining creates its own inspection evasion surface.' },
+    ipv4:{
+      achilles:{
+        title:'Options Field: Exploitable Header Malleability',
+        severity:'medium',
+        detail:'The IPv4 header includes a variable-length Options field (0–40 bytes) enabling Loose Source Routing (LSRR), Strict Source Routing (SSRR), Record Route, and Timestamp. Source routing allows an attacker to specify the explicit packet path, potentially bypassing access controls and discovering network topology. Most modern routers reject source-routed packets by default, but the field remains in-spec and the variable-length header creates parsing complexity that has historically produced implementation vulnerabilities.',
+        list:[ 'Loose/Strict Source Routing (LSRR/SSRR) for path manipulation and ACL bypass',
+               'Record Route option for passive network topology enumeration',
+               'Timestamp option for network timing inference attacks',
+               'Variable-length header parsing complexity leading to implementation bugs',
+               'Options-field-based IDS evasion in legacy inspection systems' ]
+      },
+      hermes: null
+    },
+    ipv6:{
+      achilles:{
+        title:'Extension Header Chaining: Deep Inspection Evasion',
+        severity:'medium',
+        detail:'IPv6 moves options out of the base header into a chain of Extension Headers. While the base header is fixed and clean, extension headers can be chained in theoretically unlimited sequences. Security devices must parse the entire chain to identify the upper-layer protocol — many implementations stop at a configurable depth, allowing attackers to obscure payload type or inject content beyond the inspection threshold. Routing Header Type 0 was exploited similarly to IPv4 source routing before its deprecation in RFC 5095 (2007); older stacks remain vulnerable.',
+        list:[ 'Deep extension header chains evading upper-layer protocol type identification',
+               'Routing Header Type 0 exploitation — deprecated RFC 5095, legacy stacks exposed',
+               'Destination Options Header for targeted processing attacks on end nodes',
+               'Hop-by-Hop Options forcing every router to process the full extension chain',
+               'Extension header permutation for implementation-specific inspection bypass' ]
+      },
+      hermes:{
+        title:'Fixed 40-Byte Base Header: Deterministic Processing',
+        strength:'medium',
+        detail:'The IPv6 base header is exactly 40 bytes — fixed-length, no variable options, no header checksum. This makes base header parsing deterministic and hardware-acceleratable, free from the variable-length parsing ambiguity of IPv4. Checksum removal reduces per-hop processing overhead and eliminates IP-layer checksum manipulation attacks. The Flow Label enables stateful QoS without full header inspection.',
+        list:[ 'Fixed 40-byte base header enables hardware-speed forwarding decisions',
+               'No IP-layer header checksum — no checksum manipulation attack at this layer',
+               'Flow Label enables stateful QoS classification without deep packet inspection',
+               'Deterministic parsing reduces implementation surface for header-manipulation bugs',
+               'Clearly defined Traffic Class replaces ambiguous IPv4 Type-of-Service field' ]
+      }
+    }
+  }
+];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+let currentCat = 0;
+let currentView = 'cat';
+
+// ══════════════════════════════════════════════════════════
+// SCORES
+// ══════════════════════════════════════════════════════════
+function calcScores() {
+  const s = { v4:{ a:0, h:0 }, v6:{ a:0, h:0 } };
+  CATS.forEach(c => {
+    const sides = [ [c.ipv4,'v4'], [c.ipv6,'v6'] ];
+    sides.forEach(([side, key]) => {
+      if (side.achilles) s[key].a += SEV_WT[side.achilles.severity] || 0;
+      if (side.hermes)   s[key].h += STR_WT[side.hermes.strength]   || 0;
+    });
+  });
+  return s;
+}
+
+// ══════════════════════════════════════════════════════════
+// METER CARD BUILDER (shared by overall + domain rows)
+// ══════════════════════════════════════════════════════════
+function meterCardHTML(label, cls, scores) {
+  const { a, h } = scores;
+  const total = (a + h) || 1;
+  const ap = Math.round(a / total * 100);
+  const hp = Math.round(h / total * 100);
+  const aLbl = a > 0 ? `${a}pt${a !== 1 ? 's' : ''}` : 'none';
+  const hLbl = h > 0 ? `${h}pt${h !== 1 ? 's' : ''}` : 'none';
+  return `
+    <div class="meter-card">
+      <div class="meter-top">
+        <span class="meter-proto ${cls}">${label}</span>
+        <div class="meter-scores">
+          <span class="sc-a">Achilles: ${aLbl}</span>
+          <span class="sc-h">Hermes: ${hLbl}</span>
+        </div>
+      </div>
+      <div class="meter-track">
+        <div class="bar-a" style="width:0%" data-target="${ap}"></div>
+        <div class="bar-h" style="width:0%" data-target="${hp}"></div>
+      </div>
+      <div class="meter-labels">
+        <span style="color:#f87171">◀ ACHILLES (weakness)</span>
+        <span style="color:#fbbf24">HERMES (strength) ▶</span>
+      </div>
+    </div>`;
+}
+
+function animateBars(containerId) {
+  document.querySelectorAll(`#${containerId} [data-target]`).forEach(bar => {
+    bar.style.width = bar.dataset.target + '%';
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER METERS
+// ══════════════════════════════════════════════════════════
+function renderMeters() {
+  const s = calcScores();
+  document.getElementById('meters-overall').innerHTML =
+    meterCardHTML('IPv4', 'v4', s.v4) + meterCardHTML('IPv6', 'v6', s.v6);
+}
+
+function updateDomainMeter(idx) {
+  const c = CATS[idx];
+  const ds = {
+    v4: { a: SEV_WT[c.ipv4.achilles?.severity] || 0, h: STR_WT[c.ipv4.hermes?.strength] || 0 },
+    v6: { a: SEV_WT[c.ipv6.achilles?.severity] || 0, h: STR_WT[c.ipv6.hermes?.strength] || 0 }
+  };
+  document.getElementById('meter-domain-name').textContent = `${c.icon} ${c.label}`;
+  document.getElementById('meters-domain').innerHTML =
+    `<div class="meters">
+      ${meterCardHTML('IPv4', 'v4', ds.v4)}
+      ${meterCardHTML('IPv6', 'v6', ds.v6)}
+    </div>`;
+  setTimeout(() => animateBars('meters-domain'), 30);
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER NAV
+// ══════════════════════════════════════════════════════════
+function renderNav() {
+  const nav = document.getElementById('nav');
+  nav.innerHTML = `<div class="nav-label">Categories</div>` +
+    CATS.map((c, i) => {
+      const hasA4 = !!c.ipv4.achilles, hasH4 = !!c.ipv4.hermes;
+      const hasA6 = !!c.ipv6.achilles, hasH6 = !!c.ipv6.hermes;
+      const hasA = hasA4 || hasA6, hasH = hasH4 || hasH6;
+      return `
+        <button class="nav-btn${i===0?' active':''}" data-idx="${i}" onclick="navClick(${i})">
+          <span class="nav-icon">${c.icon}</span>
+          <span>${c.label}</span>
+          <div class="nav-inds">
+            ${hasA ? '<div class="ind ind-a"></div>' : ''}
+            ${hasH ? '<div class="ind ind-h"></div>' : ''}
+          </div>
+        </button>`;
+    }).join('');
+}
+
+function navClick(idx) {
+  currentCat = idx;
+  document.querySelectorAll('.nav-btn').forEach((b,i) =>
+    b.classList.toggle('active', i === idx));
+  if (currentView === 'cat') renderCategory(idx);
+  updateDomainMeter(idx);
+}
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
+function sevBadge(sev) {
+  if (!sev) return '';
+  const map = { critical:'sev-critical', high:'sev-high', medium:'sev-medium' };
+  return `<span class="sev-badge ${map[sev]||''}">${sev.toUpperCase()}</span>`;
+}
+
+function strBadge(str) {
+  if (!str) return '';
+  const cls  = { high:'str-high', medium:'str-medium', conditional:'str-cond', low:'str-low' }[str] || '';
+  const lbl  = { high:'STRONG', medium:'MODERATE', conditional:'CONDITIONAL', low:'LIMITED'  }[str] || str.toUpperCase();
+  return `<span class="sev-badge ${cls}">${lbl}</span>`;
+}
+
+let uidCounter = 0;
+function uid() { return 'h' + (++uidCounter); }
+
+function heelCardHTML(heel, type) {
+  if (!heel) {
+    const lbl = type === 'a'
+      ? 'No Achilles Heel identified in this domain'
+      : 'No Hermes Heel identified in this domain';
+    return `<div class="no-heel">${lbl}</div>`;
+  }
+  const id   = uid();
+  const tLbl = type === 'a' ? 'ACHILLES HEEL' : 'HERMES HEEL';
+  const badge = type === 'a' ? sevBadge(heel.severity) : strBadge(heel.strength);
+  const listLbl = type === 'a' ? 'ATTACK VECTORS' : 'INHERENT ADVANTAGES';
+  const items   = heel.list || [];
+  return `
+    <div class="heel-card ${type}">
+      <div class="heel-hdr open" id="${id}h" onclick="toggle('${id}')">
+        <span class="heel-type ${type}">${tLbl}</span>
+        <span class="heel-title">${heel.title}</span>
+        ${badge}
+        <span class="expand-btn">▼</span>
+      </div>
+      <div class="heel-body open" id="${id}b">
+        <p class="heel-detail">${heel.detail}</p>
+        ${items.length ? `
+          <div class="list-label">${listLbl}</div>
+          <ul class="heel-list">${items.map(v=>`<li>${v}</li>`).join('')}</ul>
+        ` : ''}
+        ${heel.caveat ? `<div class="caveat">⚠ ${heel.caveat}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function toggle(id) {
+  const hdr  = document.getElementById(id + 'h');
+  const body = document.getElementById(id + 'b');
+  if (!hdr || !body) return;
+  hdr.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function verdictHTML(v) {
+  const cls = { v6:'vrd-v6', v4:'vrd-v4', both:'vrd-both', cont:'vrd-cont' }[v.type] || 'vrd-cont';
+  return `
+    <div class="verdict ${cls}">
+      <span style="font-size:0.875rem">${v.icon}</span>
+      <span><strong>${v.label}</strong>
+        <span class="v-sub">— ${v.note}</span>
+      </span>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER CATEGORY
+// ══════════════════════════════════════════════════════════
+function renderCategory(idx) {
+  const c = CATS[idx];
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="cat-hdr">
+      <div class="cat-name">${c.label}</div>
+      <div class="cat-desc">${c.desc}</div>
+    </div>
+    ${verdictHTML(c.verdict)}
+    <div class="proto-grid">
+      <div>
+        <div class="proto-hdr v4">
+          <span class="proto-badge v4">IPv4</span>
+          <span class="proto-name">Internet Protocol Version 4</span>
+        </div>
+        ${heelCardHTML(c.ipv4.achilles,'a')}
+        ${heelCardHTML(c.ipv4.hermes,'h')}
+      </div>
+      <div>
+        <div class="proto-hdr v6">
+          <span class="proto-badge v6">IPv6</span>
+          <span class="proto-name">Internet Protocol Version 6</span>
+        </div>
+        ${heelCardHTML(c.ipv6.achilles,'a')}
+        ${heelCardHTML(c.ipv6.hermes,'h')}
+      </div>
+    </div>`;
+  main.scrollTop = 0;
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER OVERVIEW
+// ══════════════════════════════════════════════════════════
+function renderOverview() {
+  const main = document.getElementById('main');
+  const chips = (side) => {
+    const a = side.achilles, h = side.hermes;
+    if (!a && !h) return `<span class="ov-chip none">NONE</span>`;
+    return `
+      ${a ? `<span class="ov-chip a">Achilles · ${(a.severity||'').toUpperCase()}</span>` : ''}
+      ${h ? `<span class="ov-chip h">Hermes · ${({high:'STRONG',medium:'MOD.',conditional:'COND.',low:'LTD.'}[h.strength]||'')}</span>` : ''}`;
+  };
+
+  main.innerHTML = `
+    <div class="cat-hdr">
+      <div class="cat-name">Overview Matrix</div>
+      <div class="cat-desc">All 9 security domains at a glance — click any card to dive into full detail.</div>
+    </div>
+    <div class="overview-grid">
+      ${CATS.map((c, i) => `
+        <div class="ov-card" onclick="drillDown(${i})">
+          <div class="ov-top">
+            <div class="ov-icon">${c.icon}</div>
+            <div>
+              <div class="ov-cat-name">${c.label}</div>
+              <div class="ov-cat-desc">${c.desc}</div>
+            </div>
+          </div>
+          <div class="ov-status">
+            <div class="ov-proto-cell v4">
+              <div class="ov-proto-label">IPv4</div>
+              <div class="ov-chips">${chips(c.ipv4)}</div>
+            </div>
+            <div class="ov-proto-cell v6">
+              <div class="ov-proto-label">IPv6</div>
+              <div class="ov-chips">${chips(c.ipv6)}</div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+  main.scrollTop = 0;
+}
+
+function drillDown(idx) {
+  setView('cat', document.querySelector('[data-view="cat"]'));
+  currentCat = idx;
+  document.querySelectorAll('.nav-btn').forEach((b,i) =>
+    b.classList.toggle('active', i === idx));
+  renderCategory(idx);
+}
+
+// ══════════════════════════════════════════════════════════
+// VIEW TOGGLE
+// ══════════════════════════════════════════════════════════
+function setView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.vt-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === view));
+  if (view === 'cat') {
+    document.getElementById('nav').style.display = '';
+    renderCategory(currentCat);
+  } else {
+    document.getElementById('nav').style.display = 'none';
+    renderOverview();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+renderMeters();
+renderNav();
+renderCategory(0);
+setTimeout(() => animateBars('meters-overall'), 120);
+updateDomainMeter(0);
+</script>
+</body>
+</html>
